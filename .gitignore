@@ -1,0 +1,49 @@
+# Environment variables (NEVER commit these!)
+.env
+cred.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Flask
+instance/
+.webassets-cache
+
+# Cache directory
+cache/
+*.cache
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Deployment package
+*.zip
+Strava-Live-Stats-Deploy.zip
+
+# Token files (security)
+token.json
+*.token
+
+# Claude settings (optional - keep if you want to share)
+.claude/settings.local.json

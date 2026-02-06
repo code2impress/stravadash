@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Strava Live Stats{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- Header with Controls -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-white">Dashboard</h1>
+            <p class="text-slate-400 text-sm mt-1">
+                Last updated: <span id="last-updated">Loading...</span>
+            </p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <!-- Year Selector -->
+            <select id="year-selector" class="bg-slate-800 border border-slate-700 text-white px-4 py-2 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-strava">
+                <option value="all">All Time</option>
+                <!-- Years will be populated by JavaScript -->
+            </select>
+
+            <!-- Set Goals Button -->
+            <button id="set-goals-btn" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                🎯 Goals
+            </button>
+
+            <!-- Refresh Button -->
+            <button id="refresh-btn" class="bg-strava hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                <span id="refresh-text">Refresh</span>
+                <span id="refresh-spinner" class="hidden">Refreshing...</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="text-center py-16">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-strava"></div>
+        <p class="text-slate-400 mt-4">Loading your activities...</p>
+    </div>
+
+    <!-- Main Dashboard Content (hidden until loaded) -->
+    <div id="dashboard-content" class="hidden">
+
+        <!-- Stats Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-medium text-slate-400">Total Distance</h3>
+                    <span class="text-2xl">🏃</span>
+                </div>
+                <p id="stat-distance" class="text-3xl font-bold text-white">--</p>
+                <p id="stat-distance-label" class="text-xs text-slate-500 mt-1">All-time</p>
+                <div id="distance-goal" class="hidden mt-2">
+                    <div class="w-full bg-slate-900 rounded-full h-2">
+                        <div id="distance-progress" class="bg-strava h-2 rounded-full transition-all" style="width: 0%"></div>
+                    </div>
+                    <p id="distance-goal-text" class="text-xs text-slate-400 mt-1">Goal: --</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-medium text-slate-400">Activities</h3>
+                    <span class="text-2xl">📋</span>
+                </div>
+                <p id="stat-count" class="text-3xl font-bold text-white">--</p>
+                <p id="stat-count-label" class="text-xs text-slate-500 mt-1">Total count</p>
+                <div id="count-goal" class="hidden mt-2">
+                    <div class="w-full bg-slate-900 rounded-full h-2">
+                        <div id="count-progress" class="bg-strava h-2 rounded-full transition-all" style="width: 0%"></div>
+                    </div>
+                    <p id="count-goal-text" class="text-xs text-slate-400 mt-1">Goal: --</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-medium text-slate-400">Total Time</h3>
+                    <span class="text-2xl">⏱️</span>
+                </div>
+                <p id="stat-time" class="text-3xl font-bold text-white">--</p>
+                <p id="stat-time-label" class="text-xs text-slate-500 mt-1">Moving time</p>
+                <div id="time-goal" class="hidden mt-2">
+                    <div class="w-full bg-slate-900 rounded-full h-2">
+                        <div id="time-progress" class="bg-strava h-2 rounded-full transition-all" style="width: 0%"></div>
+                    </div>
+                    <p id="time-goal-text" class="text-xs text-slate-400 mt-1">Goal: --</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-medium text-slate-400">Elevation</h3>
+                    <span class="text-2xl">⛰️</span>
+                </div>
+                <p id="stat-elevation" class="text-3xl font-bold text-white">--</p>
+                <p id="stat-elevation-label" class="text-xs text-slate-500 mt-1">Total gain</p>
+                <div id="elevation-goal" class="hidden mt-2">
+                    <div class="w-full bg-slate-900 rounded-full h-2">
+                        <div id="elevation-progress" class="bg-strava h-2 rounded-full transition-all" style="width: 0%"></div>
+                    </div>
+                    <p id="elevation-goal-text" class="text-xs text-slate-400 mt-1">Goal: --</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Distance Over Time Chart -->
+            <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-white mb-4">Distance Over Time</h3>
+                <div class="chart-container">
+                    <canvas id="distance-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Activity Type Breakdown Chart -->
+            <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-white mb-4">Activity Breakdown</h3>
+                <div class="chart-container">
+                    <canvas id="type-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pace Trends Chart (Full Width) -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-6 mb-8">
+            <h3 class="text-lg font-semibold text-white mb-4">Pace Trends (Runs)</h3>
+            <div class="chart-container">
+                <canvas id="pace-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Yearly Statistics -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-6 mb-8">
+            <h3 class="text-lg font-semibold text-white mb-4">📅 Yearly Statistics</h3>
+            <div id="yearly-stats" class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-700">
+                            <th class="text-left py-3 px-4 text-slate-400 font-medium">Year</th>
+                            <th class="text-right py-3 px-4 text-slate-400 font-medium">Activities</th>
+                            <th class="text-right py-3 px-4 text-slate-400 font-medium">Distance</th>
+                            <th class="text-right py-3 px-4 text-slate-400 font-medium">Time</th>
+                            <th class="text-right py-3 px-4 text-slate-400 font-medium">Elevation</th>
+                        </tr>
+                    </thead>
+                    <tbody id="yearly-stats-body">
+                        <!-- Yearly stats will be inserted here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Filters and Activities Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+            <!-- Filters Sidebar -->
+            <div class="lg:col-span-1">
+                <div class="bg-slate-800 border border-slate-700 rounded-lg p-6 sticky top-4">
+                    <h3 class="text-lg font-semibold text-white mb-4">Filters</h3>
+
+                    <!-- Search -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Search</label>
+                        <input type="text" id="filter-search" placeholder="Activity name..." class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-strava">
+                    </div>
+
+                    <!-- Activity Type -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Activity Type</label>
+                        <select id="filter-type" class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-strava">
+                            <option value="">All Types</option>
+                            <option value="Run">Run</option>
+                            <option value="Ride">Ride</option>
+                            <option value="Swim">Swim</option>
+                            <option value="Walk">Walk</option>
+                            <option value="Hike">Hike</option>
+                        </select>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Start Date</label>
+                        <input type="date" id="filter-start-date" class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-strava">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-slate-400 mb-2">End Date</label>
+                        <input type="date" id="filter-end-date" class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-strava">
+                    </div>
+
+                    <!-- Distance Range -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Min Distance (km)</label>
+                        <input type="number" id="filter-min-distance" placeholder="0" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-strava">
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Max Distance (km)</label>
+                        <input type="number" id="filter-max-distance" placeholder="100" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-strava">
+                    </div>
+
+                    <!-- Filter Buttons -->
+                    <div class="space-y-2">
+                        <button id="apply-filters-btn" class="w-full bg-strava hover:bg-orange-600 text-white px-4 py-2 rounded-md font-medium transition-colors">
+                            Apply Filters
+                        </button>
+                        <button id="reset-filters-btn" class="w-full bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-md font-medium transition-colors">
+                            Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activities List -->
+            <div class="lg:col-span-3">
+                <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">
+                        Recent Activities (<span id="activity-count">0</span>)
+                    </h3>
+
+                    <div id="activities-list" class="space-y-3">
+                        <!-- Activities will be inserted here by JavaScript -->
+                    </div>
+
+                    <div id="no-activities" class="hidden text-center py-12">
+                        <p class="text-slate-400">No activities found matching your filters.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Map Modal -->
+<div id="map-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+        <div class="flex items-center justify-between p-4 border-b border-slate-700">
+            <h3 id="map-modal-title" class="text-lg font-semibold text-white">Activity Route</h3>
+            <button id="close-map-modal" class="text-slate-400 hover:text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div id="map-container" class="h-96"></div>
+    </div>
+</div>
+
+<!-- Goals Modal -->
+<div id="goals-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-800 rounded-lg max-w-md w-full">
+        <div class="flex items-center justify-between p-6 border-b border-slate-700">
+            <h3 class="text-xl font-semibold text-white">🎯 Set Goals for <span id="goals-year">2026</span></h3>
+            <button id="close-goals-modal" class="text-slate-400 hover:text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">Distance Goal (km)</label>
+                <input type="number" id="goal-distance" placeholder="1000" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-strava">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">Activities Goal</label>
+                <input type="number" id="goal-count" placeholder="100" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-strava">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">Time Goal (hours)</label>
+                <input type="number" id="goal-time" placeholder="100" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-strava">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">Elevation Goal (m)</label>
+                <input type="number" id="goal-elevation" placeholder="50000" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-strava">
+            </div>
+        </div>
+        <div class="p-6 border-t border-slate-700 flex space-x-3">
+            <button id="save-goals-btn" class="flex-1 bg-strava hover:bg-orange-600 text-white px-4 py-2 rounded-md font-medium transition-colors">
+                Save Goals
+            </button>
+            <button id="clear-goals-btn" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-md font-medium transition-colors">
+                Clear
+            </button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Pass config to JavaScript
+    window.DASHBOARD_CONFIG = {
+        autoRefreshInterval: {{ auto_refresh_interval }},
+        athleteId: {{ athlete.id if athlete else 'null' }}
+    };
+</script>
+
+<!-- Load JavaScript modules -->
+<script src="{{ url_for('static', filename='js/api-client.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/maps.js') }}"></script>
+<script src="{{ url_for('static', filename='js/filters.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
