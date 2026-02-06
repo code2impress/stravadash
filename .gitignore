@@ -47,3 +47,4 @@ token.json
 
 # Claude settings (optional - keep if you want to share)
 .claude/settings.local.json
+strava_token.json
