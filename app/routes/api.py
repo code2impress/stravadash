@@ -2,7 +2,7 @@
 JSON API endpoints for AJAX requests
 """
 from flask import Blueprint, jsonify, request, current_app
-from app.auth import requires_auth, get_valid_token, get_athlete_id
+from app.auth import requires_strava, get_valid_token, get_athlete_id
 from app.strava_api import StravaAPI, StravaAPIError, RateLimitError, AuthenticationError
 from app.cache import cache, get_activities_cache_key, get_stats_cache_key, clear_athlete_cache
 from app.stats import (
@@ -99,7 +99,7 @@ def fetch_all_activities(strava_api, max_activities=None):
 
 
 @api.route("/activities")
-@requires_auth
+@requires_strava
 def get_activities():
     """
     Get activities with optional filtering
@@ -179,7 +179,7 @@ def get_activities():
 
 
 @api.route("/activity/<int:activity_id>")
-@requires_auth
+@requires_strava
 def get_activity(activity_id):
     """Get detailed information about a specific activity"""
     try:
@@ -211,7 +211,7 @@ def get_activity(activity_id):
 
 
 @api.route("/stats")
-@requires_auth
+@requires_strava
 def get_stats():
     """Get calculated statistics for all activities"""
     try:
@@ -263,7 +263,7 @@ def get_stats():
 
 
 @api.route("/stats/weekly")
-@requires_auth
+@requires_strava
 def get_weekly_stats():
     """Get weekly summary statistics"""
     try:
@@ -291,7 +291,7 @@ def get_weekly_stats():
 
 
 @api.route("/stats/monthly")
-@requires_auth
+@requires_strava
 def get_monthly_stats():
     """Get monthly summary statistics"""
     try:
@@ -319,7 +319,7 @@ def get_monthly_stats():
 
 
 @api.route("/refresh", methods=["POST"])
-@requires_auth
+@requires_strava
 def refresh_data():
     """Force refresh cached data"""
     try:

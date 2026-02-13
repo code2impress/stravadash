@@ -41,9 +41,10 @@ Thumbs.db
 *.zip
 Strava-Live-Stats-Deploy.zip
 
-# Token files (security)
+# Token files and database (security)
 token.json
 *.token
+strava_users.db
 
 # Claude settings (optional - keep if you want to share)
 .claude/settings.local.json

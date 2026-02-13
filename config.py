@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,21 +17,37 @@ class Config:
         "https://dittrime.pythonanywhere.com/authorized"
     )
 
-    # Token storage
-    TOKEN_FILE = "strava_token.json"
+    # Google OAuth Configuration
+    GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+    GOOGLE_REDIRECT_URI = os.getenv(
+        "GOOGLE_REDIRECT_URI",
+        "https://dittrime.pythonanywhere.com/auth/google/callback"
+    )
+
+    # Admin Configuration
+    ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "")
+
+    # Database
+    DATABASE = os.getenv("DATABASE", "strava_users.db")
+
+    # Session security
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    PERMANENT_SESSION_LIFETIME = timedelta(days=30)
 
     # Cache configuration
     CACHE_TYPE = "FileSystemCache"
     CACHE_DIR = "cache"
-    CACHE_DEFAULT_TIMEOUT = 300  # 5 minutes
-    CACHE_THRESHOLD = 500  # Maximum number of cached items
+    CACHE_DEFAULT_TIMEOUT = 300
+    CACHE_THRESHOLD = 500
 
     # Strava API rate limits
     STRAVA_RATE_LIMIT_15MIN = 100
     STRAVA_RATE_LIMIT_DAILY = 1000
 
     # Auto-refresh interval (milliseconds)
-    AUTO_REFRESH_INTERVAL = 300000  # 5 minutes
+    AUTO_REFRESH_INTERVAL = 300000
 
 
 class DevelopmentConfig(Config):
@@ -40,15 +57,18 @@ class DevelopmentConfig(Config):
         "STRAVA_REDIRECT_URI",
         "http://localhost:5000/authorized"
     )
+    GOOGLE_REDIRECT_URI = os.getenv(
+        "GOOGLE_REDIRECT_URI",
+        "http://localhost:5000/auth/google/callback"
+    )
 
 
 class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
-    # Use environment variables for all sensitive data in production
+    SESSION_COOKIE_SECURE = True
 
 
-# Configuration dictionary
 config = {
     "development": DevelopmentConfig,
     "production": ProductionConfig,
